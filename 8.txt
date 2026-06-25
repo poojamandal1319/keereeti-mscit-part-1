@@ -1,0 +1,45 @@
+Aim :CLASSIFICATION MODEL a. Install relevant package for classification. b. Choose classifier for classification problem. c. Evaluate the performance of classifier. 
+
+# ============================================================
+# PRACTICAL 8: NAIVE BAYES CLASSIFICATION
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# Step 1: Install Packages
+install.packages("e1071")
+install.packages("caTools")
+install.packages("caret")
+
+# Step 2: Load Libraries
+library(e1071)
+library(caTools)
+library(caret)
+
+# Step 3: Load Data
+data(iris)
+str(iris)
+
+# Step 4: Split Data
+set.seed(120)
+split <- sample.split(iris$Species, SplitRatio = 0.7)
+train_cl <- subset(iris, split == TRUE)
+test_cl <- subset(iris, split == FALSE)
+
+# Step 5: Scale Data
+train_scale <- scale(train_cl[, 1:4])
+test_scale <- scale(test_cl[, 1:4])
+
+# Step 6: Train Model
+classifier_cl <- naiveBayes(Species ~ ., data = train_cl)
+print(classifier_cl)
+
+# Step 7: Predict
+y_pred <- predict(classifier_cl, newdata = test_cl)
+
+# Step 8: Confusion Matrix
+cm <- table(test_cl$Species, y_pred)
+print(cm)
+
+# Step 9: Performance
+confusionMatrix(cm)
+

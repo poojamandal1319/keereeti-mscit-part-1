@@ -1,0 +1,75 @@
+# ============================================================
+# PRACTICAL 6: LOGISTIC REGRESSION MODEL
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# Step 1: Load Dataset
+college <- read.csv("https://raw.githubusercontent.com/ropensci/datapack/main/inst/extdata/pkg-example/binary.csv")
+head(college)
+nrow(college)
+str(college)
+summary(college)
+
+# Step 2: Install and Load caTools
+install.packages("caTools")
+library(caTools)
+
+# Step 3: Split Data
+set.seed(123)
+split <- sample.split(college$admit, SplitRatio = 0.75)
+training_reg <- subset(college, split == TRUE)
+test_reg <- subset(college, split == FALSE)
+
+# Step 4: Fit Logistic Regression Model
+fit_logistic_model <- glm(admit ~ ., data = training_reg, family = "binomial")
+summary(fit_logistic_model)
+
+# Step 5: View Coefficients
+coef(fit_logistic_model)["gre"]
+coef(fit_logistic_model)["gpa"]
+coef(fit_logistic_model)["rank"]
+
+# Step 6: Predict on Test Data
+predict_reg <- predict(fit_logistic_model, newdata = test_reg, type = "response")
+head(predict_reg)
+
+# Step 7: Conditional Density Plots
+cdplot(as.factor(admit) ~ gpa, data = college)
+cdplot(as.factor(admit) ~ gre, data = college)
+cdplot(as.factor(admit) ~ rank, data = college)
+
+# Step 8: Convert to Binary Predictions
+predict_binary <- ifelse(predict_reg > 0.5, 1, 0)
+head(predict_binary)
+
+# Step 9: Confusion Matrix
+cm <- table(Actual = test_reg$admit, Predicted = predict_binary)
+print(cm)
+
+# Step 10: Performance Metrics
+accuracy <- sum(diag(cm)) / sum(cm)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
+precision <- cm[2,2] / (cm[1,2] + cm[2,2])
+recall <- cm[2,2] / (cm[2,1] + cm[2,2])
+f1 <- 2 * precision * recall / (precision + recall)
+
+print(paste("Precision:", round(precision, 4)))
+print(paste("Recall:", round(recall, 4)))
+print(paste("F1-Score:", round(f1, 4)))
+
+# Step 11: Model Fit Check
+null_dev <- fit_logistic_model$null.deviance
+res_dev <- fit_logistic_model$deviance
+pseudo_r2 <- 1 - (res_dev / null_dev)
+print(paste("McFadden R-squared:", round(pseudo_r2, 4)))
+print(paste("AIC:", round(fit_logistic_model$aic, 2)))
+
+# Step 12: Hosmer-Lemeshow Test
+install.packages("ResourceSelection")
+library(ResourceSelection)
+hl_test <- hoslem.test(test_reg$admit, predict_reg, g = 10)
+print(hl_test)
+
+# Step 13: Exit
+q()

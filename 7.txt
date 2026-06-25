@@ -1,0 +1,64 @@
+# ============================================================
+# PRACTICAL 7: MULTIPLE LOGISTIC REGRESSION
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# Step 1: Load Dataset
+college <- read.csv("https://raw.githubusercontent.com/csquared/udacity-dlnd/master/nn/binary.csv")
+head(college)
+nrow(college)
+str(college)
+summary(college)
+
+# Step 2: Install and Load caTools
+install.packages("caTools")
+library(caTools)
+
+# Step 3: Split Data
+set.seed(123)
+split <- sample.split(college$admit, SplitRatio = 0.75)
+training_reg <- subset(college, split == TRUE)
+test_reg <- subset(college, split == FALSE)
+
+# Step 4: Fit Logistic Regression Model
+fit_MRegressor_model <- glm(formula = admit ~ gre + gpa + rank, 
+                            data = training_reg, 
+                            family = binomial)
+summary(fit_MRegressor_model)
+
+# Step 5: Predict on Test Set
+predict_reg <- predict(fit_MRegressor_model, 
+                       newdata = test_reg, 
+                       type = "response")
+head(predict_reg)
+
+# Step 6: Classify Predictions
+predict_class <- ifelse(predict_reg > 0.5, 1, 0)
+head(predict_class)
+
+# Step 7: Conditional Density Plots
+cdplot(as.factor(admit) ~ gpa, data = college)
+cdplot(as.factor(admit) ~ gre, data = college)
+cdplot(as.factor(admit) ~ rank, data = college)
+
+# Step 8: Confusion Matrix
+cm <- table(Actual = test_reg$admit, Predicted = predict_class)
+print(cm)
+
+# Step 9: Performance Metrics
+accuracy <- sum(diag(cm)) / sum(cm)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
+precision <- cm[2,2] / (cm[1,2] + cm[2,2])
+recall <- cm[2,2] / (cm[2,1] + cm[2,2])
+f1 <- 2 * precision * recall / (precision + recall)
+
+print(paste("Precision:", round(precision, 4)))
+print(paste("Recall:", round(recall, 4)))
+print(paste("F1-Score:", round(f1, 4)))
+
+# Step 10: Model Coefficients
+print(coef(fit_MRegressor_model))
+
+# Step 11: Exit
+q()
