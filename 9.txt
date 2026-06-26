@@ -1,0 +1,174 @@
+# ============================================================
+# PRACTICAL 9: K-MEANS CLUSTERING MODEL
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# Step 1: Install Packages
+install.packages("plyr")
+install.packages("ggplot2")
+install.packages("cluster")
+install.packages("lattice")
+install.packages("grid")
+install.packages("gridExtra")
+
+# Step 2: Load Libraries
+library(plyr)
+library(ggplot2)
+library(cluster)
+library(lattice)
+library(grid)
+library(gridExtra)
+
+# Step 3: Load Dataset
+grade_input = as.data.frame(read.csv("E:/Rajdeep/bigdata pract/dataset/grades_km_input.csv"))
+head(grade_input)
+
+# Step 4: Convert to Matrix
+kmdata_orig = as.matrix(grade_input[, c("Student", "English", "Math", "Science")])
+kmdata = kmdata_orig[, 2:4]
+kmdata[1:10, ]
+
+# Step 5: Elbow Method
+wss = numeric(15)
+for(k in 1:15) {
+    wss[k] = sum(kmeans(kmdata, centers = k, nstart = 25)$withinss)
+}
+plot(1:15, wss, type = "b", 
+     xlab = "Number of Clusters", 
+     ylab = "Within sum of square",
+     main = "Elbow Method for Optimal K")
+
+# Step 6: Apply K-Means
+km = kmeans(kmdata, 3, nstart = 25)
+print(km)
+
+# Step 7: Compare WSS
+print(c(wss[3], sum(km$withinss)))
+
+# Step 8: Prepare Data for Visualization
+df = as.data.frame(kmdata_orig[, 2:4])
+df$cluster = factor(km$cluster)
+centers = as.data.frame(km$centers)
+
+# Step 9: Create Plots
+g1 = ggplot(data = df, aes(x = English, y = Math, color = cluster)) + 
+     geom_point(size = 3) + 
+     theme(legend.position = "right") + 
+     geom_point(data = centers, 
+                aes(x = English, y = Math, 
+                    color = as.factor(c(1, 2, 3))), 
+                size = 10, alpha = 0.3, show.legend = FALSE) +
+     ggtitle("English vs Math")
+
+g2 = ggplot(data = df, aes(x = English, y = Science, color = cluster)) + 
+     geom_point(size = 3) + 
+     geom_point(data = centers, 
+                aes(x = English, y = Science, 
+                    color = as.factor(c(1, 2, 3))), 
+                size = 10, alpha = 0.3, show.legend = FALSE) +
+     ggtitle("English vs Science")
+
+g3 = ggplot(data = df, aes(x = Math, y = Science, color = cluster)) + 
+     geom_point(size = 3) + 
+     geom_point(data = centers, 
+                aes(x = Math, y = Science, 
+                    color = as.factor(c(1, 2, 3))), 
+                size = 10, alpha = 0.3, show.legend = FALSE) +
+     ggtitle("Math vs Science")
+
+# Step 10: Display Plots
+print(g1)
+print(g2)
+print(g3)
+
+# Step 11: Arrange Plots
+grid.arrange(
+    arrangeGrob(
+        g1 + theme(legend.position = "none"),
+        g2 + theme(legend.position = "none"),
+        g3 + theme(legend.position = "none"),
+        top = "High School Student Cluster Analysis",
+        ncol = 1
+    )
+)
+
+# Step 12: Save Plots
+png("cluster_english_math.png")
+print(g1)
+dev.off()
+
+png("cluster_english_science.png")
+print(g2)
+dev.off()
+
+png("cluster_math_science.png")
+print(g3)
+dev.off()
+
+png("cluster_analysis_combined.png", width = 800, height = 1200)
+grid.arrange(
+    arrangeGrob(
+        g1 + theme(legend.position = "none"),
+        g2 + theme(legend.position = "none"),
+        g3 + theme(legend.position = "none"),
+        top = "High School Student Cluster Analysis",
+        ncol = 1
+    )
+)
+dev.off()
+
+# Step 13: Cluster Summary
+print("Cluster Centers:")
+print(centers)
+
+print("Cluster Sizes:")
+print(table(km$cluster))
+
+# Step 14: Exit
+q()
+
+# ============================================================
+# COMPLETE WORKING CODE - APRIORI ALGORITHM
+# ============================================================
+
+# Step 1: Install Packages (Run Once)
+install.packages("arules")
+install.packages("arulesViz")
+install.packages("RColorBrewer")
+
+# Step 2: Load Libraries
+library(arules)
+library(arulesViz)
+library(RColorBrewer)
+
+# Step 3: Load Dataset
+data("Groceries")
+
+# Step 4: Check Dataset
+print(Groceries)
+summary(Groceries)
+class(Groceries)
+
+# Step 5: Apply Apriori
+rules = apriori(Groceries, parameter = list(supp = 0.02, conf = 0.2))
+summary(rules)
+inspect(rules[1:10])
+
+# Step 6: Item Frequency Plot
+itemFrequencyPlot(Groceries, topN = 20, 
+                  col = brewer.pal(8, 'Pastel2'), 
+                  main = 'Relative Item Frequency Plot', 
+                  type = "relative", 
+                  ylab = "Item Frequency (Relative)")
+
+# Step 7: Frequent Itemsets (Length 2)
+itemsets = apriori(Groceries, parameter = list(minlen = 2, maxlen = 2, 
+                    support = 0.02, target = "frequent itemsets"))
+summary(itemsets)
+inspect(itemsets)
+
+# Step 8: Frequent Itemsets (Length 3)
+itemsets_3 = apriori(Groceries, parameter = list(minlen = 3, maxlen = 3, 
+                     support = 0.02, target = "frequent itemsets"))
+summary(itemsets_3)
+inspect(itemsets_3)

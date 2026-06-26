@@ -1,0 +1,103 @@
+# ============================================================
+# PRACTICAL 5: SVM (SUPPORT VECTOR MACHINE) CLASSIFICATION
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# Step 1: Load Dataset
+dataset = read.csv('E:/NIKHILESH/social.csv')
+head(dataset)
+
+# Step 2: Select Relevant Columns
+dataset = dataset[3:5]
+head(dataset)
+
+# Step 3: Encode Target Feature
+dataset$Purchased = factor(dataset$Purchased, levels = c(0, 1))
+str(dataset)
+
+# Step 4: Install and Load caTools
+install.packages("caTools")
+library(caTools)
+
+# Step 5: Split Data
+set.seed(123)
+split = sample.split(dataset$Purchased, SplitRatio = 0.75)
+training_set = subset(dataset, split == TRUE)
+test_set = subset(dataset, split == FALSE)
+
+# Step 6: Feature Scaling
+training_set[-3] = scale(training_set[-3])
+test_set[-3] = scale(test_set[-3])
+
+# Step 7: Install and Load e1071
+install.packages("e1071")
+library(e1071)
+
+# Step 8: Train SVM Model
+classifier = svm(formula = Purchased ~ ., 
+                 data = training_set, 
+                 type = 'C-classification', 
+                 kernel = 'linear')
+print(classifier)
+
+# Step 9: Predict on Test Set
+y_pred = predict(classifier, newdata = test_set[-3])
+head(y_pred)
+
+# Step 10: Confusion Matrix
+cm = table(test_set[, 3], y_pred)
+print("Confusion Matrix:")
+print(cm)
+
+# Step 11: Performance Metrics
+accuracy <- sum(diag(cm)) / sum(cm)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+
+precision <- cm[2,2] / (cm[1,2] + cm[2,2])
+recall <- cm[2,2] / (cm[2,1] + cm[2,2])
+f1 <- 2 * precision * recall / (precision + recall)
+
+print(paste("Precision:", round(precision, 4)))
+print(paste("Recall:", round(recall, 4)))
+print(paste("F1-Score:", round(f1, 4)))
+
+# Step 12: Create Plotting Function
+install.packages("ElemStatLearn")
+library(ElemStatLearn)
+
+plot_svm <- function(set, title) {
+    X1 = seq(min(set[, 1]) - 1, max(set[, 1]) + 1, by = 0.01)
+    X2 = seq(min(set[, 2]) - 1, max(set[, 2]) + 1, by = 0.01)
+    grid_set = expand.grid(X1, X2)
+    colnames(grid_set) = c('Age', 'EstimatedSalary')
+    y_grid = predict(classifier, newdata = grid_set)
+    
+    plot(set[, -3], 
+         main = title, 
+         xlab = 'Age', 
+         ylab = 'Estimated Salary',
+         xlim = range(X1), 
+         ylim = range(X2))
+    
+    contour(X1, X2, matrix(as.numeric(y_grid), length(X1), length(X2)), add = TRUE)
+    points(grid_set, pch = '.', col = ifelse(y_grid == 1, 'springgreen3', 'tomato'))
+    points(set, pch = 21, bg = ifelse(set[, 3] == 1, 'green4', 'red3'))
+}
+
+# Step 13: Plot Training Set
+plot_svm(training_set, 'SVM Classification (Training set)')
+
+# Step 14: Plot Test Set
+plot_svm(test_set, 'SVM Classification (Test set)')
+
+# Step 15: Save Plots
+png("svm_training_set.png")
+plot_svm(training_set, 'SVM Classification (Training set)')
+dev.off()
+
+png("svm_test_set.png")
+plot_svm(test_set, 'SVM Classification (Test set)')
+dev.off()
+
+# Step 16: Exit
+q()
