@@ -1,0 +1,196 @@
+# ============================================================
+# PRACTICAL 3: HBASE WITH PYTHON (HappyBase)
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+import happybase
+import time
+
+# ============================================================
+# STEP 1: CONNECT TO HBASE
+# ============================================================
+print("=" * 60)
+print("CONNECTING TO HBASE...")
+print("=" * 60)
+
+try:
+    # Connect to HBase Thrift server
+    connection = happybase.Connection('localhost', port=9090)
+    print("✅ Connected to HBase successfully!")
+except Exception as e:
+    print(f"❌ Connection failed: {e}")
+    print("ℹ️ Make sure HBase Thrift server is running:")
+    print("   /usr/local/hbase/bin/hbase thrift start")
+    exit(1)
+
+# ============================================================
+# STEP 2: CREATE TABLE
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 2: CREATING TABLE")
+print("=" * 60)
+
+table_name = 'students'
+
+# Delete table if exists
+if table_name in connection.tables():
+    print(f"ℹ️ Table '{table_name}' exists. Deleting...")
+    connection.delete_table(table_name, disable=True)
+
+# Create table with column families
+connection.create_table(
+    table_name,
+    {
+        'info': dict(),      # name, age, grade
+        'marks': dict(),     # Math, Science, English
+        'hobbies': dict()    # hobbies list
+    }
+)
+print(f"✅ Table '{table_name}' created successfully!")
+
+# Get table reference
+table = connection.table(table_name)
+
+# ============================================================
+# STEP 3: INSERT DATA (CRUD - CREATE)
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 3: INSERTING BIG DATA (CRUD - CREATE)")
+print("=" * 60)
+
+students_data = [
+    ('101', {'info:name': 'Priya Sharma', 'info:age': '20', 'info:grade': 'A',
+             'marks:Math': '95', 'marks:Science': '92', 'marks:English': '88',
+             'hobbies:list': 'Reading,Singing,Coding'}),
+    
+    ('102', {'info:name': 'Amit Patel', 'info:age': '21', 'info:grade': 'B',
+             'marks:Math': '85', 'marks:Science': '80', 'marks:English': '90',
+             'hobbies:list': 'Cricket,Gaming'}),
+    
+    ('103', {'info:name': 'Sneha Reddy', 'info:age': '19', 'info:grade': 'A+',
+             'marks:Math': '98', 'marks:Science': '96', 'marks:English': '95',
+             'hobbies:list': 'Dancing,Photography'}),
+    
+    ('104', {'info:name': 'Rahul Singh', 'info:age': '22', 'info:grade': 'C',
+             'marks:Math': '70', 'marks:Science': '75', 'marks:English': '80',
+             'hobbies:list': 'Chess,Reading'}),
+    
+    ('105', {'info:name': 'Neha Jain', 'info:age': '20', 'info:grade': 'B+',
+             'marks:Math': '88', 'marks:Science': '90', 'marks:English': '92',
+             'hobbies:list': 'Painting,Music'}),
+    
+    ('106', {'info:name': 'Vikram Singh', 'info:age': '23', 'info:grade': 'A',
+             'marks:Math': '92', 'marks:Science': '94', 'marks:English': '89',
+             'hobbies:list': 'Coding,Chess'}),
+    
+    ('107', {'info:name': 'Kavya Nair', 'info:age': '18', 'info:grade': 'A',
+             'marks:Math': '90', 'marks:Science': '93', 'marks:English': '97',
+             'hobbies:list': 'Reading,Dancing'}),
+    
+    ('108', {'info:name': 'Arjun Reddy', 'info:age': '21', 'info:grade': 'B',
+             'marks:Math': '82', 'marks:Science': '78', 'marks:English': '85',
+             'hobbies:list': 'Gaming,Music'}),
+    
+    ('109', {'info:name': 'Meera Patel', 'info:age': '19', 'info:grade': 'A+',
+             'marks:Math': '96', 'marks:Science': '98', 'marks:English': '94',
+             'hobbies:list': 'Photography,Singing'}),
+    
+    ('110', {'info:name': 'Rohan Joshi', 'info:age': '22', 'info:grade': 'C',
+             'marks:Math': '65', 'marks:Science': '70', 'marks:English': '75',
+             'hobbies:list': 'Cricket,Reading'})
+]
+
+# Batch insert
+with table.batch() as batch:
+    for row_key, data in students_data:
+        batch.put(row_key, data)
+        print(f"✅ Inserted: {row_key} - {data['info:name']}")
+
+print(f"\n📊 Total inserted: {len(students_data)} students")
+
+# ============================================================
+# STEP 4: READ DATA (CRUD - READ)
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 4: READING DATA (CRUD - READ)")
+print("=" * 60)
+
+# Read single row
+print("\n🔍 Reading single row (rollNo 101):")
+row = table.row(b'101')
+print(f"   Name: {row.get(b'info:name', b'N/A').decode()}")
+print(f"   Age: {row.get(b'info:age', b'N/A').decode()}")
+print(f"   Grade: {row.get(b'info:grade', b'N/A').decode()}")
+print(f"   Math: {row.get(b'marks:Math', b'N/A').decode()}")
+print(f"   Science: {row.get(b'marks:Science', b'N/A').decode()}")
+
+# Scan multiple rows
+print("\n🔍 Scanning all students:")
+for key, data in table.scan():
+    print(f"   Roll No: {key.decode()}, Name: {data.get(b'info:name', b'N/A').decode()}")
+
+# Scan with filter
+print("\n🔍 Students with grade A:")
+for key, data in table.scan(filter=b"SingleColumnValueFilter('info','grade',=,'binary:A')"):
+    print(f"   {key.decode()}: {data.get(b'info:name', b'N/A').decode()}")
+
+# ============================================================
+# STEP 5: UPDATE DATA (CRUD - UPDATE)
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 5: UPDATING DATA (CRUD - UPDATE)")
+print("=" * 60)
+
+# Update single column
+table.put(b'102', {b'info:grade': b'A'})
+print("✅ Updated student 102 grade to A")
+
+# Update multiple columns
+table.put(b'104', {
+    b'info:grade': b'B',
+    b'info:active': b'false'
+})
+print("✅ Updated student 104")
+
+# Increment marks (using atomic operations)
+table.put(b'101', {b'marks:Math': b'97'})
+print("✅ Updated Math marks for student 101")
+
+# ============================================================
+# STEP 6: DELETE DATA (CRUD - DELETE)
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 6: DELETING DATA (CRUD - DELETE)")
+print("=" * 60)
+
+# Delete single column
+table.delete(b'108', columns=[b'info:active'])
+print("✅ Deleted 'active' column from student 108")
+
+# Delete entire row
+table.delete(b'110')
+print("✅ Deleted student 110")
+
+# ============================================================
+# STEP 7: FINAL SCAN
+# ============================================================
+print("\n" + "=" * 60)
+print("STEP 7: FINAL DATA")
+print("=" * 60)
+
+print("\n📊 All students in HBase:")
+for key, data in table.scan():
+    row_str = f"   Roll No: {key.decode()}, "
+    row_str += f"Name: {data.get(b'info:name', b'N/A').decode()}, "
+    row_str += f"Grade: {data.get(b'info:grade', b'N/A').decode()}"
+    print(row_str)
+
+# ============================================================
+# STEP 8: CLOSE CONNECTION
+# ============================================================
+print("\n" + "=" * 60)
+print("CLOSING CONNECTION...")
+print("=" * 60)
+
+connection.close()
+print("✅ Connection closed.")

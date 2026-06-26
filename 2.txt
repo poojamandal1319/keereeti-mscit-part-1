@@ -1,0 +1,45 @@
+# ============================================================
+# PRACTICAL 2: WORD COUNT MAPREDUCE - COMPLETE
+# MSCIT Part 1 - Big Data
+# ============================================================
+
+# ============================================================
+# PART 1: CREATE INPUT FILES
+# ============================================================
+mkdir ~/wordcount_input
+cd ~/wordcount_input
+echo "Hello Hadoop Hello World" > file1.txt
+echo "Hello MapReduce World" > file2.txt
+
+# ============================================================
+# PART 2: UPLOAD TO HDFS
+# ============================================================
+hdfs dfs -mkdir -p /user/pooja/wordcount/input
+hdfs dfs -put ~/wordcount_input/*.txt /user/pooja/wordcount/input/
+
+# ============================================================
+# PART 3: CREATE JAVA CODE
+# ============================================================
+mkdir ~/wordcount_java
+cd ~/wordcount_java
+nano WordCount.java
+# (Paste the Java code from Step 4)
+
+# ============================================================
+# PART 4: COMPILE AND CREATE JAR
+# ============================================================
+export HADOOP_CLASSPATH=$(hadoop classpath)
+javac -classpath ${HADOOP_CLASSPATH} -d . WordCount.java
+jar -cvf wordcount.jar *.class
+
+# ============================================================
+# PART 5: RUN JOB
+# ============================================================
+hdfs dfs -rm -r /user/pooja/wordcount/output
+hadoop jar wordcount.jar WordCount /user/pooja/wordcount/input /user/pooja/wordcount/output
+
+# ============================================================
+# PART 6: CHECK OUTPUT
+# ============================================================
+hdfs dfs -ls /user/pooja/wordcount/output
+hdfs dfs -cat /user/pooja/wordcount/output/part-r-00000
